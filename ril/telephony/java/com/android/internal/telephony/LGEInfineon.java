@@ -197,11 +197,16 @@ public class LGEInfineon extends RIL implements CommandsInterface {
 
     private Object
     responseNitz(Parcel p) {
-        int tzoffset, dst=0;
+        int tzoffset=0, dst=0;
         String parceldata, parcelextra;
         String response;
         SimpleDateFormat dateFormatter;
         SimpleDateFormat dateParser;
+
+        boolean usesLocalTime = true;
+        String override = SystemProperties.get("ro.telephony.nitz");
+        if (override.equals("GMT")) usesLocalTime = false;
+        if (override.equals("local")) usesLocalTime = true;
 
         /* Get the actual date string */
         parceldata = p.readString();
@@ -225,7 +230,8 @@ public class LGEInfineon extends RIL implements CommandsInterface {
             dateParser = new SimpleDateFormat("yy/MM/dd,HH:mm:ss");
 
             /* Directly calculate UTC time using DST Offset */
-            int offset = tzoffset*15*60*1000;	// DST corrected
+            int offset = 0;
+            if (usesLocalTime) offset = tzoffset*15*60*1000;	// DST corrected
             long when = dateParser.parse(parceldata).getTime() - offset;
             Date d = new Date(when);
             response = dateFormatter.format(d);
